@@ -201,6 +201,8 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
+  yield_process();
+
   return tid;
 }
 
@@ -336,6 +338,7 @@ void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
+  yield_process();
 }
 
 /* Returns the current thread's priority. */
@@ -582,3 +585,67 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+
+/* Checks to see if current threads priority is less than
+   The highest priority thread in the ready_list. */
+void yield_process(void)
+{
+	if (list_empty(&ready_list))
+		return;
+
+	struct thread highest_priority = list_entry(list_front(ready_list), struct thread, elem);
+	int priority_newThread = highest_priority->priority;
+
+	if (thread_get_priority() < priority_newThread)
+	{
+		thread_yield();
+	}
+}
+
+/* Wakes highest priority thread */
+void wake_highest_priority(void)
+{
+	struct thread highest_priority;
+	for (int i = 0; i < sizeof(all_list); i++)
+	{
+		if (highest_priority == NULL || all_list[i]->priority > highest_priority->priority)
+		{
+			highest_priority = all_list[i];
+		}
+	}
+	if (highest_priority->status == THREAD_BLOCKED)
+		thread_unblock(highest_priority);
+}
+
+
+/* Donates priority of a thread if it doesn't have the lock. */
+void donate_priority(struct thread new_thread)
+{
+	while(tid_lock->holder != new_thread)
+	{
+		struct thread lock_holder = tid_lock->holder;
+		int old_priority = lock_holder->priority;
+		int thread_priority = new_thread->priority;
+
+		if (lock_holder->priority < new_thread->priority)
+		{
+			priority_difference = thread_priority - old_priority;
+			if (PRI_MAX <= priority_difference + old_priority)
+				lock_holder->priority = PRI_MAX;
+			else
+				lock_holder->priority = priority_difference + old_priority;
+
+			new_thread->priority = PRI_MIN;
+
+			while (lock_holder == tid_lock->holder)
+			{}
+
+			new_thread->priority = thread_priority;
+		}
+
+	}
+}
+
+
+
