@@ -104,7 +104,13 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
+<<<<<<< HEAD
+	//Priority Scheduler
+	struct lock *waiting_for_lock;
+
+=======
 	struct thread_blocked blocked;      /*blocked checker to see if blocked. */
+>>>>>>> fa5eec774970fee351e8cf74e7fff1fd0fac5652
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
