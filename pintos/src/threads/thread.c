@@ -37,6 +37,8 @@ static struct thread *initial_thread;
 /* Lock used by allocate_tid(). */
 static struct lock tid_lock;
 
+static struct list blocked_processes; //list of blocked threads in THREAD_BLOCKED.
+
 /* Stack frame for kernel_thread(). */
 struct kernel_thread_frame 
   {
@@ -84,6 +86,56 @@ static tid_t allocate_tid (void);
 
    It is not safe to call thread_current() until this function
    finishes. */
+
+
+static void wake_up_threads(void)
+{
+  int64_t ticks = timer_ticks();
+  while (true) {
+	if (list_empty(&blocked_processes)){
+	 return;
+	}
+    struct list_elem *top = list_front(&blocked_processes);
+    struct thread *thr = list_entry(top, struct thread, elem);
+    if (thr->blocked.sleeping_wakeup_time > ticks) {
+	  return;
+    }
+
+    list_pop_front(&blocked_processes);
+    thread_unblock(thr);
+  }
+}
+
+
+
+static bool sleeping_thread_less_func(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
+{
+  struct thread *thread_a = list_entry(a, struct thread, elem);
+  struct thread *thread_b = list_entry(b, struct thread, elem);
+  return thread_a->blocked.sleeping_wakeup_time < thread_b->blocked.sleeping_wakeup_time;
+}
+
+
+void sleep(int64_t ticks)
+{
+  struct thread *currentThread = thread_current (); 
+  enum intr_level old_level;
+
+  ASSERT(!intr_context ());
+
+  old_level = intr_disable ();
+  currentThread->status = THREAD_BLOCKED;
+  currentThread->blocked.reason = SLEEPING;
+  currentThread->blocked.sleeping_wakeup_time = ticks;
+  if (currentThread != idle_thread){
+	list_insert_ordered(&blocked_processes, &currentThread->elem, sleeping_thread_less_func, NULL);
+  }
+
+  schedule ();
+  intr_set_level (old_level);
+}
+
+
 void
 thread_init (void) 
 {
@@ -134,6 +186,7 @@ thread_tick (void)
   else
     kernel_ticks++;
 
+  //wake_up_threads();
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
