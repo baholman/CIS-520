@@ -649,7 +649,7 @@ void yield_process(void)
 	if (list_empty(&ready_list))
 		return;
 
-	struct thread highest_priority = list_entry(list_front(ready_list), struct thread, elem);
+	struct thread *highest_priority = list_entry(list_front(&ready_list), struct thread, elem);
 	int priority_newThread = highest_priority->priority;
 
 	if (thread_get_priority() < priority_newThread)
@@ -661,12 +661,15 @@ void yield_process(void)
 /* Wakes highest priority thread */
 void wake_highest_priority(void)
 {
-	struct thread highest_priority;
-	for (int i = 0; i < sizeof(all_list); i++)
+	struct thread *highest_priority;
+
+	struct list_elem *e;
+	for (e = list_begin(&all_list); e != list_end(&all_list); e = list_next(e))
 	{
-		if (highest_priority == NULL || all_list[i]->priority > highest_priority->priority)
+		struct thread *t = list_entry(e, struct thread, allelem);
+		if (highest_priority == NULL || t->priority > highest_priority->priority)
 		{
-			highest_priority = all_list[i];
+			highest_priority = t;
 		}
 	}
 	if (highest_priority->status == THREAD_BLOCKED)
@@ -675,18 +678,18 @@ void wake_highest_priority(void)
 
 
 /* Donates priority of a thread if it doesn't have the lock. */
-void donate_priority(struct thread new_thread)
+void donate_priority(struct thread *new_thread)
 {
-	struct lock l = new_thread->waiting_for_lock;
-	while(l->holder != cur)
+	struct lock *l = new_thread->waiting_for_lock;
+	while(l->holder != new_thread)
 	{
-		struct thread lock_holder = l->holder;
+		struct thread *lock_holder = l->holder;
 		int old_priority = lock_holder->priority;
 		int thread_priority = new_thread->priority;
 
 		if (lock_holder->priority < new_thread->priority)
 		{
-			priority_difference = thread_priority - old_priority;
+			int priority_difference = thread_priority - old_priority;
 			if (PRI_MAX <= priority_difference + old_priority)
 				lock_holder->priority = PRI_MAX;
 			else
