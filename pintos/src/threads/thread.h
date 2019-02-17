@@ -24,6 +24,17 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
+
+enum thread_blocked_reason { UNKNOWN, SLEEPING };
+
+struct thread_blocked {
+  enum thread_blocked_reason reason;
+  union {
+	int sleeping_wakeup_time;
+  };
+};
+
+
 /* A kernel thread or user process.
 
    Each thread structure is stored in its own 4 kB page.  The
@@ -93,9 +104,13 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
+<<<<<<< HEAD
 	//Priority Scheduler
 	struct lock *waiting_for_lock;
 
+=======
+	struct thread_blocked blocked;      /*blocked checker to see if blocked. */
+>>>>>>> fa5eec774970fee351e8cf74e7fff1fd0fac5652
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
@@ -112,6 +127,12 @@ extern bool thread_mlfqs;
 
 void thread_init (void);
 void thread_start (void);
+
+static void wake_up_threads(void);
+
+static bool sleeping_thread_less_func(const struct list_elem *, const struct list_elem *, void *);
+
+void sleep(int64_t);
 
 void thread_tick (void);
 void thread_print_stats (void);
