@@ -346,6 +346,7 @@ int
 thread_get_priority (void) 
 {
   return thread_current ()->priority;
+  donate_priority(thread_current());
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -466,6 +467,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+  t->waiting_for_lock = NULL;
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -622,9 +624,10 @@ void wake_highest_priority(void)
 /* Donates priority of a thread if it doesn't have the lock. */
 void donate_priority(struct thread new_thread)
 {
-	while(tid_lock->holder != new_thread)
+	struct lock l = new_thread->waiting_for_lock;
+	while(l->holder != cur)
 	{
-		struct thread lock_holder = tid_lock->holder;
+		struct thread lock_holder = l->holder;
 		int old_priority = lock_holder->priority;
 		int thread_priority = new_thread->priority;
 
@@ -638,8 +641,11 @@ void donate_priority(struct thread new_thread)
 
 			new_thread->priority = PRI_MIN;
 
-			while (lock_holder == tid_lock->holder)
-			{}
+			while (lock_holder == l->holder)
+			{
+				if (lock_holder->waiting_for_lock != NULL)
+					donate_priority(lock_holder);
+			}
 
 			new_thread->priority = thread_priority;
 		}
