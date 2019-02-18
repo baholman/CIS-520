@@ -240,6 +240,8 @@ thread_create (const char *name, int priority,
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
+  enum intr_level old = intr_disable();
+
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame (t, sizeof *kf);
   kf->eip = NULL;
@@ -254,12 +256,14 @@ thread_create (const char *name, int priority,
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
   sf->ebp = 0;
+  intr_set_level(old);
 
   /* Add to run queue. */
   thread_unblock (t);
   
+  old = intr_disable();
   yield_process();
-  
+  intr_set_level(old);
   return tid;
 }
 
@@ -296,7 +300,8 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  list_insert_ordered(&ready_list, &t->elem, (list_less_func *)&cmp_priority, NULL);
+  //list_push_back (&ready_list, &t->elem);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -366,8 +371,13 @@ thread_yield (void)
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  if (cur != idle_thread) 
-    list_push_back (&ready_list, &cur->elem);
+  if (cur != idle_thread)
+  {
+	  list_insert_ordered(&ready_list, &cur->elem,
+		  (list_less_func *)&cmp_priority,
+		  NULL);
+  }
+    //list_push_back (&ready_list, &cur->elem);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -394,6 +404,7 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+  enum intr_level old = intr_disable();
   int old_priority = thread_current ()->priority;
   thread_current()->init_priority = new_priority;
   refresh_priority();
@@ -402,15 +413,17 @@ thread_set_priority (int new_priority)
 	  donate_priority(thread_current());
   else
 	  yield_process();
-
+  intr_set_level(old);
 }
 
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void) 
 {
-	donate_priority(thread_current());
-	return thread_current ()->priority;
+	enum intr_level old = intr_disable();
+	int tmp = thread_current()->priority;
+	intr_set_level(old);
+	return tmp;
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -757,4 +770,15 @@ void refresh_priority(void)
 	{
 		t->priority = s->priority;
 	}
+}
+
+bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
+{
+	struct thread *ta = list_entry(a, struct thread, elem);
+	struct thread *tb = list_entry(b, struct thread, elem);
+	if (ta->priority > tb->priority)
+	{
+		return true;
+	}
+	return false;
 }

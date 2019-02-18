@@ -168,5 +168,6 @@ void wake_highest_priority(void);
 void donate_priority(struct thread *new_thread);
 void remove_with_lock(struct lock *lock);
 void refresh_priority(void);
+bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
 
 #endif /* threads/thread.h */
