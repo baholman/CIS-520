@@ -144,7 +144,7 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
-
+  list_init(&blocked_processes);
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
@@ -186,7 +186,7 @@ thread_tick (void)
   else
     kernel_ticks++;
 
-  //wake_up_threads();
+  wake_up_threads();
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
