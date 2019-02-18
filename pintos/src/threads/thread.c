@@ -73,19 +73,6 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
-/* Initializes the threading system by transforming the code
-   that's currently running into a thread.  This can't work in
-   general and it is possible in this case only because loader.S
-   was careful to put the bottom of the stack at a page boundary.
-
-   Also initializes the run queue and the tid lock.
-
-   After calling this function, be sure to initialize the page
-   allocator before trying to create any threads with
-   thread_create().
-
-   It is not safe to call thread_current() until this function
-   finishes. */
 
 /*This method wakes up the sleeping threads, first by checking if the blocked processes list is empty, and when they are not, it creates a list element of the top of the list and gets the blocked process location, then creates a thread pointer and creates a list_entry with the top, thread and the elem. if the pointer's wakeup time is larger than the actual ticks so far, it returns. Then it pops the blocked list before being in the ready list.
 */
@@ -138,7 +125,19 @@ void sleep(int64_t ticks)
   intr_set_level (old_level); //returns interrupt level to original.
 }
 
+/* Initializes the threading system by transforming the code
+   that's currently running into a thread.  This can't work in
+   general and it is possible in this case only because loader.S
+   was careful to put the bottom of the stack at a page boundary.
 
+   Also initializes the run queue and the tid lock.
+
+   After calling this function, be sure to initialize the page
+   allocator before trying to create any threads with
+   thread_create().
+
+   It is not safe to call thread_current() until this function
+   finishes. */
 void
 thread_init (void) 
 {
@@ -147,7 +146,9 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
-  list_init(&blocked_processes);
+  list_init(&blocked_processes);/*initializes the blocked processes list, function runs in main to 	
+  initialize the thread system.*/
+
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
