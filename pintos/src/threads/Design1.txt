@@ -10,15 +10,41 @@ Cullen Povilonis cullenp@ksu.edu
 >>This is wherw we cite any external sources used to complete the assignment.
 >>Also where we make any specific notes for the graders.
 
-n/a so far
+Stuart Harrell - stuartharrell.com/blog/2016/12/16/efficient-alarm-clock
 
-			ALARM CLOCK
-			===========
+
+                        ALARM CLOCK
+                        ===========
 
 ---- DATA STRUCTURES ----
 >> A1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less
+
+  struct thread *thr_a = list_entry(a, struct thread, elem);
+  struct thread *thr_b = list_entry(b, struct thread, elem);
+
+  These two structs are used in the sleeping_compare method and return true or false according to wakeup time.
+
+    struct thread *currentThread = thread_current ();
+    enum intr_level old_level;
+
+    This struct and enum are used to avoid busy waiting, where currentThread points to the current thread and the enums refer to the current interrupt and previous interrupt respectively.
+
+        enum thread_reason { UNKNOWN, SLEEPING };
+
+        struct thread_blocked {
+                enum thread_reason reason;
+        union {
+                int wakeup_time;
+        };
+        };
+
+  The enum at the top is used to state why the thread was blocked. The struct thead_blocked is used as a blocker to see if the thread is blocked, utilizing the enum thread_reason.
+
+  static struct list blocked_processes;
+
+  The list of blocked threads that are in THREAD_BLOCKED
 
 
 ---- ALGORITHMS ----
@@ -28,21 +54,31 @@ n/a so far
 >> the timer interrupt handler?
 
 
+A2: When you call timer sleep, the process sleeps for approximately tick ticks. Interrupts are used and the CPU is yielded to another process.
+
+A3: We ordered our list holding the sleeping processes by wake up time, so that when we get to the point where we have to use the timer interrupt handler it only has to look from the top of that list, only waking up a thread if its wake up time has passed.
+
+
 ---- SYCHRONIZATION ----
 >> A4: How are race conditions avoided when multiple threads call
 >> timer_sleep() simultaneously?
 >> A5: How are race conditions avoided when a timer interrupt occurs
 >> during a call to timer_sleep()?
 
+A4: We disable interrupts whenever accessing anything mentioned in A1, allowing us to make all of the read/write atomic.
+
+A5: In order to prevent races between the timer interrupt and the timer_sleep(), we diable interrupts in the sections of time_sleep where race conditions could occur (hopefully if it worked) avoiding race conditions.
+
 
 ---- RATIONALE ----
 >> A6: Why did you choose this design?  In what ways is it superior to
 >> other designs that you considered?
 
+A6: To be honest with you, it's just what worked (mostly) for us. We threw a lot of different code at the project just trying to get the tests to pass.
 
 
-			PRIORITY SCHEDULING
-			===================
+                        PRIORITY SCHEDULING
+                        ===================
 
 ---- DATA STRUCTURES ----
 >> B1: Copy here the declaration of each new or changed `struct' or
@@ -61,22 +97,22 @@ n/a so far
 >> on a lock that a higher-priority thread is waiting for.
 
 
-
 ---- SYNCHRONIZATION ----
 >> B6: Describe a potential race in thread_set_priority() and explain
 >> how your implementation avoids it.  Can you use a lock to avoid
 >> this race?
 
 
-
 ---- RATIONALE ----
 >> B7: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
 
+B7: Same as A6, it's just what we found that (mostly) worked. We were simply creating code that did the job to pass the tests.
 
 
-			ADVANCED SCHEDULER
-			==================
+
+                        ADVANCED SCHEDULER
+                        ==================
 
 ---- DATA STRUCTURES ----
 
@@ -101,5 +137,6 @@ ticks   A   B   C   A   B   C   to run
 
 
 ---- RATIONALE ----
+
 
 
