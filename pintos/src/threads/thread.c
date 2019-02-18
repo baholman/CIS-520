@@ -87,28 +87,29 @@ static tid_t allocate_tid (void);
    It is not safe to call thread_current() until this function
    finishes. */
 
-/*This method wakes up the sleeping threads, first by checking if the blocked processes are empty, and when they are not, it creates a list element of the top of the list and puts it at the blocked process location, then creates a thread pointer and creates a list_entry with the top, thread and the elem/ if the pointer's wakeup time is larger than the actual ticks so far, it returns. Then it pops the blocked list before being in the ready list.
+/*This method wakes up the sleeping threads, first by checking if the blocked processes list is empty, and when they are not, it creates a list element of the top of the list and gets the blocked process location, then creates a thread pointer and creates a list_entry with the top, thread and the elem. if the pointer's wakeup time is larger than the actual ticks so far, it returns. Then it pops the blocked list before being in the ready list.
 */
 static void wake_up_threads(void)
 {
-  int64_t ticks = timer_ticks();
+  int64_t ticks = timer_ticks(); //checks after a tick in thread_tick ();
   while (true) {
 	if (list_empty(&blocked_processes)){
 	 return;
 	}
-    struct list_elem *top = list_front(&blocked_processes);
-    struct thread *thr = list_entry(top, struct thread, elem);
-    if (thr->blocked.wakeup_time > ticks) {
+    struct list_elem *top = list_front(&blocked_processes); //returns the top element from the list.
+    struct thread *thr = list_entry(top, struct thread, elem); /*converts pointer to list element top into a pointer at the list. */
+
+    if (thr->blocked.wakeup_time > ticks) { //if the blocked thread's wakeup time is > than the ticks
 	  return;
     }
 
-    list_pop_front(&blocked_processes);
-    thread_unblock(thr);
+    list_pop_front(&blocked_processes); //gets front list elem and removes it from blocked address.
+    thread_unblock(thr); //unblocks the thread.
   }
 }
 
 
-//returns whether the wakeup time of two elements is bigger and returns true or false depending on sleep length;
+//returns whether the wakeup time of two elements is bigger and returns true or false depending on sleep length - used in sleep() and gets called in list_insert_ordered that returns a bool that gets checked in list_insert_ordered for true/false, while looping though the list and inserts that element;
 static bool sleeping_compare(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
 {
   struct thread *thr_a = list_entry(a, struct thread, elem);
@@ -116,7 +117,7 @@ static bool sleeping_compare(const struct list_elem *a, const struct list_elem *
   return thr_a->blocked.wakeup_time < thr_b->blocked.wakeup_time;
 }
 
-/*This is the method used in timer.c to avoid busy waiting, and it does this by creating a current thread pointer and an old and new level enum. It checks to see if sleeping, or doesn't get called, then sets the old level to a disabled interrupt. Then it sets the status of the current thread to blocked, with the reason being for sleeping, and sets the wakeup time to the original ticks. and if the current thread is not equal to the idle thread, it inserts a list of the area of the blocked processes, the current thread elem location, the function that compares wakeuo time. After that it runs schedule which finds the current and next thread and switches threads, then it sets the interrupt level to the old interrupt level. 
+/*This is the method used in timer.c to avoid busy waiting, and it does this by creating a current thread pointer and an old and new level enum. It checks to see if sleeping, or doesn't get called, then sets the old level to a disabled interrupt. Then it sets the status of the current thread to blocked, with the reason being for sleeping, and sets the wakeup time to the original ticks. and if the current thread is not equal to the idle thread, it inserts a list of the area of the blocked processes, the current thread elem location, the function that compares wakeup time. After that it runs schedule which finds the current and next thread and switches threads, then it sets the interrupt level to the old interrupt level. 
 */
 void sleep(int64_t ticks)
 {
@@ -134,7 +135,7 @@ void sleep(int64_t ticks)
   }
 
   schedule ();
-  intr_set_level (old_level);
+  intr_set_level (old_level); //returns interrupt level to original.
 }
 
 
