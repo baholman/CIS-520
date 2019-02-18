@@ -80,16 +80,10 @@ static void wake_up_threads(void)
 {
   int64_t ticks = timer_ticks(); //checks after a tick in thread_tick ();
   while (true) {
-	if (list_empty(&blocked_processes)){
-	 return;
-	}
+	if (list_empty(&blocked_processes))return;
     struct list_elem *top = list_front(&blocked_processes); //returns the top element from the list.
     struct thread *thr = list_entry(top, struct thread, elem); /*converts pointer to list element top into a pointer at the list. */
-
-    if (thr->blocked.wakeup_time > ticks) { //if the blocked thread's wakeup time is > than the ticks
-	  return;
-    }
-
+    if (thr->blocked.wakeup_time > ticks) return; //if the blocked thread's wakeup time is > than the ticks
     list_pop_front(&blocked_processes); //gets front list elem and removes it from blocked address.
     thread_unblock(thr); //unblocks the thread.
   }
@@ -110,17 +104,12 @@ void sleep(int64_t ticks)
 {
   struct thread *currentThread = thread_current (); 
   enum intr_level old_level;
-
   ASSERT(!intr_context ());
-
   old_level = intr_disable ();
   currentThread->status = THREAD_BLOCKED;
   currentThread->blocked.reason = SLEEPING;
   currentThread->blocked.wakeup_time = ticks;
-  if (currentThread != idle_thread){
-	list_insert_ordered(&blocked_processes, &currentThread->elem, sleeping_compare, NULL);
-  }
-
+  if (currentThread != idle_thread) list_insert_ordered(&blocked_processes, &currentThread->elem, sleeping_compare, NULL);
   schedule ();
   intr_set_level (old_level); //returns interrupt level to original.
 }
