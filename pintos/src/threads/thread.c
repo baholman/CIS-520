@@ -256,9 +256,9 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
-
+  
   yield_process();
-
+  
   return tid;
 }
 
@@ -393,7 +393,6 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  enum intr_level old = intr_disable();
   int old_priority = thread_current ()->priority;
   thread_current()->init_priority = new_priority;
   refresh_priority();
@@ -403,7 +402,6 @@ thread_set_priority (int new_priority)
   else
 	  yield_process();
 
-  intr_set_level(old);
 }
 
 /* Returns the current thread's priority. */
