@@ -86,6 +86,17 @@ A6: To be honest with you, it's just what worked (mostly) for us. We threw a lot
 >> enumeration.  Identify the purpose of each in 25 words or less.
 >> B2: Explain the data structure used to track priority donation.
 
+B1: 
+
+int init_priority; -> This is th non-donated priority within the thread.
+
+struct list donations; -> The list that contains the threads that are waiting on the lock the current thread has. 
+
+struct lock *waiting_for_lock; -> The lock that is currently waiting for the lock.
+
+struct list_elem donation_elem; -> The element within the list that can be added to another thread's donation list.
+
+B2: With threads High, Medium, and Low. High priority thread waiting an a lock held by a medium prioroty thread will donate its priority to the medium priority thread. Similarly the high priority thread is waiting on a lock being held by a low priority thread it will also donate it's priority. The same thing goes for a medium priority waiting on a low priority thread waiting on a lock. Lastly, if a high priority thread is waiting on a lock that a medium priority thread has and a medium priority is waiting on a lock owned by a  low priority thread then the medium and high priority threads will donate their priority to the lowest priority thread.
 
 
 ---- ALGORITHMS ----
@@ -96,11 +107,19 @@ A6: To be honest with you, it's just what worked (mostly) for us. We threw a lot
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
 
+B3: For a semaphore, in the synch.h file there is a list of waiters (threads waiting). The thread with the highest prioroty is at the front of that list, meaning that whenever a thread is woken up, the thread at the front of that list is woken up meaning that the highest priority thread is woken up.
+
+B4: First, the current thread updates its waiting for lock variable with the lock that it is waiting for. Second, the current thread adds itself to the lock holders donation list. The prioroty will be donated eventually. :)
+
+B5: The lock holder is updated to null, then the threads waiting fir the lock that was just released are removed from the current threads donations list, then the donation is refreshed. Then the highest priority thread acquires the lock and is put in the ready queue. Lastly, check to see if the current thread still has the highest priority, if it does not then it yields the processor.  :) 
+
 
 ---- SYNCHRONIZATION ----
 >> B6: Describe a potential race in thread_set_priority() and explain
 >> how your implementation avoids it.  Can you use a lock to avoid
->> this race?
+>> this race
+
+B6: Interrupts are turned off, so there are no read/write errors. The lock is there to prevent the race condition. A potential race condition would occurif the thread priority was being updated by the interrupt handler and the method at the same time. 
 
 
 ---- RATIONALE ----
