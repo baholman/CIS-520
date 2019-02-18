@@ -106,7 +106,7 @@ if (ticks <= 0) return;
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
-  sleep(start + ticks);
+  sleep(start + ticks); //runs the new sleep function in thread.c to avoid busy waiting (PROJECT 1).
 }
 
 

@@ -25,12 +25,12 @@ typedef int tid_t;
 #define PRI_MAX 63                      /* Highest priority. */
 
 
-enum thread_reason { UNKNOWN, SLEEPING };
+enum thread_reason { UNKNOWN, SLEEPING }; //adds enum for reason of thread blocked.
 
 struct thread_blocked {
-  enum thread_reason reason;
+  enum thread_reason reason; //creates reason in thread blocked struct that gives if sleeping.
   union {
-	int wakeup_time;
+	int wakeup_time; //wakeup time for thread that is blocked.
   };
 };
 
