@@ -106,6 +106,9 @@ struct thread
 
 	//Priority Scheduler
 	struct lock *waiting_for_lock;
+	int init_priority;
+	struct list donations;
+	struct list_elem donation_elem;
 
 	struct thread_blocked blocked;      /*blocked checker to see if blocked. */
 
@@ -163,5 +166,7 @@ int thread_get_load_avg (void);
 void yield_process(void);
 void wake_highest_priority(void);
 void donate_priority(struct thread *new_thread);
+void remove_with_lock(struct lock *lock);
+void refresh_priority(void);
 
 #endif /* threads/thread.h */
