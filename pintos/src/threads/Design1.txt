@@ -10,8 +10,10 @@ Cullen Povilonis cullenp@ksu.edu
 >>This is wherw we cite any external sources used to complete the assignment.
 >>Also where we make any specific notes for the graders.
 
-Stuart Harrell - stuartharrell.com/blog/2016/12/16/efficient-alarm-clock
+Stuart Harrell - stuartharrell.com/blog/2016/12/16/efficient-alarm-clock -> Used to implement the Alarm Clock
 
+Copyright (C) 2004, 2005, 2006 Board of Trustees, leland Stanford Jr. University. All Rights Reserved. -> Granted Free of Charge with Copyright. Author(s): Ryan Wilson 
+Used to help implement the priority scheduler.
 
                         ALARM CLOCK
                         ===========
