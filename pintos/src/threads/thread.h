@@ -25,12 +25,12 @@ typedef int tid_t;
 #define PRI_MAX 63                      /* Highest priority. */
 
 
-enum thread_blocked_reason { UNKNOWN, SLEEPING };
+enum thread_reason { UNKNOWN, SLEEPING };
 
 struct thread_blocked {
-  enum thread_blocked_reason reason;
+  enum thread_reason reason;
   union {
-	int sleeping_wakeup_time;
+	int wakeup_time;
   };
 };
 
@@ -128,7 +128,7 @@ void thread_start (void);
 
 static void wake_up_threads(void);
 
-static bool sleeping_thread_less_func(const struct list_elem *, const struct list_elem *, void *);
+static bool sleeping_compare(const struct list_elem *, const struct list_elem *, void *);
 
 void sleep(int64_t);
 
