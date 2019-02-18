@@ -196,7 +196,7 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
-  int old = intr_disable();
+  enum intr_level old = intr_disable();
 
   if (!thread_mlfqs && lock->holder)
   {
@@ -224,7 +224,7 @@ lock_try_acquire (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (!lock_held_by_current_thread (lock));
 
-  int old = intr_disable();
+  enum intr_level old = intr_disable();
   success = sema_try_down(&lock->semaphore);
   if (success)
   {
@@ -246,8 +246,18 @@ lock_release (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
 
+  enum intr_level old = intr_disable();
+
   lock->holder = NULL;
+  if (!thread_mlfqs)
+  {
+	  remove_with_lock(lock);
+	  refresh_priority();
+  }
+
   sema_up (&lock->semaphore);
+
+  intr_set_level(old);
 }
 
 /* Returns true if the current thread holds LOCK, false

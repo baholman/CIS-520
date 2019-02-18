@@ -390,16 +390,25 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
-  yield_process();
+  enum intr_level old = intr_disable();
+  int old_priority = thread_current ()->priority;
+  thread_current()->init_priority = new_priority;
+  refresh_priority();
+
+  if (old_priority < thread_current()->priority)
+	  donate_priority(thread_current());
+  else
+	  yield_process();
+
+  intr_set_level(old);
 }
 
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void) 
 {
-  return thread_current ()->priority;
-  donate_priority(thread_current());
+	donate_priority(thread_current());
+	return thread_current ()->priority;
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -521,6 +530,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
   t->waiting_for_lock = NULL;
+  list_init(&t->donations);
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -681,33 +691,65 @@ void wake_highest_priority(void)
 void donate_priority(struct thread *new_thread)
 {
 	struct lock *l = new_thread->waiting_for_lock;
-	while(l->holder != new_thread)
+	while (l->holder != new_thread)
 	{
 		struct thread *lock_holder = l->holder;
-		int old_priority = lock_holder->priority;
+		//int old_priority = lock_holder->priority;
 		int thread_priority = new_thread->priority;
+		new_thread->init_priority = thread_priority;
 
-		if (lock_holder->priority < new_thread->priority)
+		if (lock_holder->priority >= new_thread->priority)
 		{
-			int priority_difference = thread_priority - old_priority;
-			if (PRI_MAX <= priority_difference + old_priority)
-				lock_holder->priority = PRI_MAX;
-			else
-				lock_holder->priority = priority_difference + old_priority;
-
-			new_thread->priority = PRI_MIN;
-
-			while (lock_holder == l->holder)
-			{
-				if (lock_holder->waiting_for_lock != NULL)
-					donate_priority(lock_holder);
-			}
-
-			new_thread->priority = thread_priority;
+			return;
 		}
+		/*
+		int priority_difference = thread_priority - old_priority;
+		if (PRI_MAX <= priority_difference + old_priority)
+			lock_holder->priority = PRI_MAX;
+		else
+			lock_holder->priority = priority_difference + old_priority;
+
+		new_thread->priority = PRI_MIN;
+
+		new_thread->priority = thread_priority;
+		*/
+		lock_holder->priority = thread_priority;
+		new_thread = l->holder;
+		l = new_thread->waiting_for_lock;
+
 
 	}
 }
 
 
 
+void remove_with_lock(struct lock *lock)
+{
+	struct list_elem *e;
+	for (e = list_begin(&thread_current()->donations); e != list_end(&thread_current()->donations); e = list_next(e))
+	{
+		struct thread *t = list_entry(e, struct thread, donation_elem);
+		
+		if (t->waiting_for_lock == lock)
+		{
+			list_remove(e);
+		}
+
+	}
+}
+
+void refresh_priority(void)
+{
+	struct thread *t = thread_current();
+	t->priority = t->init_priority;
+	if (list_empty(&t->donations))
+	{
+		return;
+	}
+	struct thread *s = list_entry(list_front(&t->donations),
+		struct thread, donation_elem);
+	if (s->priority > t->priority)
+	{
+		t->priority = s->priority;
+	}
+}
